@@ -7,8 +7,12 @@
   "publisher": "labelixa",
   "license": "MIT",
   "homepage": "https://labelixa.com",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Labelixa/labelixa-vscode.git"
+  },
   "bugs": {
-    "url": "https://labelixa.com/docs/api",
+    "url": "https://github.com/Labelixa/labelixa-vscode/issues",
     "email": "support@labelixa.com"
   },
   "categories": [
