@@ -1,0 +1,128 @@
+{
+  "name": "labelixa-zpl",
+  "displayName": "Labelixa ZPL",
+  "description": "Preview Zebra ZPL labels and lint them while you type — the label under your cursor, rendered. No printer required.",
+  "version": "0.1.4",
+  "icon": "icon.png",
+  "publisher": "labelixa",
+  "license": "MIT",
+  "homepage": "https://labelixa.com",
+  "bugs": {
+    "url": "https://labelixa.com/docs/api",
+    "email": "support@labelixa.com"
+  },
+  "categories": [
+    "Programming Languages",
+    "Linters",
+    "Visualization"
+  ],
+  "keywords": [
+    "zpl",
+    "zebra",
+    "label",
+    "barcode",
+    "printing",
+    "epl",
+    "thermal-printer"
+  ],
+  "engines": {
+    "vscode": "^1.75.0"
+  },
+  "main": "./extension.js",
+  "scripts": {
+    "check-publish": "node scripts/check-publish.mjs",
+    "vscode:prepublish": "node scripts/check-publish.mjs"
+  },
+  "activationEvents": [
+    "onLanguage:zpl"
+  ],
+  "capabilities": {
+    "untrustedWorkspaces": {
+      "supported": "limited",
+      "description": "In an untrusted workspace nothing is sent to the API: a file you have only opened to read is not shipped to a network service."
+    },
+    "virtualWorkspaces": true
+  },
+  "contributes": {
+    "languages": [
+      {
+        "id": "zpl",
+        "aliases": [
+          "ZPL",
+          "Zebra ZPL"
+        ],
+        "extensions": [
+          ".zpl",
+          ".zplii",
+          ".prn"
+        ],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "commands": [
+      {
+        "command": "labelixa.onizle",
+        "title": "Labelixa: Preview the label under the cursor",
+        "category": "Labelixa"
+      },
+      {
+        "command": "labelixa.denetle",
+        "title": "Labelixa: Lint this ZPL file",
+        "category": "Labelixa"
+      },
+      {
+        "command": "labelixa.setApiKey",
+        "title": "Labelixa: Set the API key",
+        "category": "Labelixa"
+      }
+    ],
+    "configuration": {
+      "title": "Labelixa",
+      "properties": {
+        "labelixa.apiKey": {
+          "type": "string",
+          "default": "",
+          "scope": "machine",
+          "markdownDeprecationMessage": "Deprecated: the API key is now kept in the editor's secret store. Run **Labelixa: Set the API key** instead. A value left here is moved to the secret store once and then cleared.",
+          "markdownDescription": "Deprecated. Use the command **Labelixa: Set the API key**; the key is stored as a secret, never in a settings file."
+        },
+        "labelixa.baseUrl": {
+          "type": "string",
+          "default": "https://api.labelixa.com",
+          "description": "API base URL. Change this only for a self-hosted (on-premise) Labelixa."
+        },
+        "labelixa.dpmm": {
+          "type": "number",
+          "default": 8,
+          "enum": [
+            6,
+            8,
+            12,
+            24
+          ],
+          "description": "Printer resolution in dots per mm (8 dpmm = 203 dpi)."
+        },
+        "labelixa.widthIn": {
+          "type": "number",
+          "default": 4,
+          "description": "Label width in inches."
+        },
+        "labelixa.heightIn": {
+          "type": "number",
+          "default": 6,
+          "description": "Label height in inches."
+        },
+        "labelixa.lintOnSave": {
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "Lint on save. Linting does **not** consume label quota — only the shared rate limit. Rendering a preview does consume quota, and is never automatic."
+        },
+        "labelixa.lintWhileTyping": {
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "Lint while typing, 700 ms after you stop. Linting does **not** consume label quota — only the shared rate limit. Turn this off on a slow connection or when you share the anonymous rate limit with others."
+        }
+      }
+    }
+  }
+}

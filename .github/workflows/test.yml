@@ -1,0 +1,20 @@
+name: test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      # No dependencies and no lock file: nothing to install.
+      - run: node scripts/check-publish.mjs
+      # Smoke test against the live API (the package has no mocks by design:
+      # if the API contract drifts, this is where it shows).
+      - run: node test/smoke.js https://api.labelixa.com
