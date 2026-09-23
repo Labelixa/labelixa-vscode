@@ -23,6 +23,9 @@
 const FINDINGS = "diagnostics";
 const MESSAGE = "mesaj";
 const MESSAGE_KEY = "message_key";
+/** Absolute address of the rule's documentation page; absent for codes
+ * without a page (analyzer notes). */
+const RULE_URL = "url";
 
 /** Quick-fix object inside a finding. */
 const FIX = "quickfix";
@@ -41,7 +44,7 @@ const COMMAND_PARAMS = "parametreler";
 const COMMAND_RENDERED = "destekleniyor";
 
 module.exports = {
-  FINDINGS, MESSAGE, MESSAGE_KEY,
+  FINDINGS, MESSAGE, MESSAGE_KEY, RULE_URL,
   FIX, FIX_TITLE, FIX_START, FIX_END, FIX_TEXT,
   COMMAND_LIST, COMMAND_CODE, COMMAND_NAME, COMMAND_TEXT,
   COMMAND_FORMAT, COMMAND_PARAMS, COMMAND_RENDERED,

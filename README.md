@@ -29,7 +29,9 @@ while looking at another — a quiet way to ship the wrong thing.
 **Lint while you type.** 700 ms after you stop typing — and on save — the
 file is checked and the findings land in the Problems panel with their real
 line and column: unknown commands, unterminated fields, out-of-range
-parameters, RFID notes, and more. The delay is not cosmetic: a request per
+parameters, RFID notes, and more. Each finding code is a link to its rule
+page (`labelixa.com/zpl/rules/<code>`): what it means, why it matters and a
+label that shows the fix. The delay is not cosmetic: a request per
 keystroke would exceed the rate limit and answer your typing with errors.
 
 **Fix it from the marker.** Where the API returns a fix, the finding offers

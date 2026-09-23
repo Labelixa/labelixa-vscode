@@ -113,7 +113,8 @@ async function lint(document, ctx, state) {
     const d = new vscode.Diagnostic(
       new vscode.Range(f.range.line, f.range.col, f.range.endLine, f.range.endCol),
       f.message, f.severity);
-    d.code = f.code;
+    // With a rule page the code becomes a link in the Problems panel.
+    d.code = f.url ? { value: f.code, target: vscode.Uri.parse(f.url) } : f.code;
     d.source = SOURCE;
     if (f.fix) fixes.push({ diagnostic: d, fix: f.fix });
     return d;

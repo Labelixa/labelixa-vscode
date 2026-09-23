@@ -2,7 +2,7 @@
   "name": "labelixa-zpl",
   "displayName": "Labelixa ZPL",
   "description": "Preview Zebra ZPL labels and lint them while you type — the label under your cursor, rendered. No printer required.",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "icon": "icon.png",
   "publisher": "labelixa",
   "license": "MIT",

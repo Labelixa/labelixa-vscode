@@ -4,6 +4,14 @@ All notable changes to the Labelixa ZPL extension are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 and the project uses [Semantic Versioning](https://semver.org/).
 
+## [0.1.5] - 2026-09-22
+
+### Added
+- Finding codes in the Problems panel link to their rule page
+  (`https://labelixa.com/zpl/rules/<code>`): what the code means, why it
+  matters and a label that shows the fix. The address comes from the
+  API's `url` field; findings without one keep a plain code.
+
 ## [0.1.4] - 2026-09-18
 
 ### Security

@@ -111,6 +111,18 @@ function quickfixTests() {
   assert.equal(prepared[0].message, "ZPL1001");   // no `mesaj` -> code
   assert.equal(prepared[0].severity, 0);
   assert.equal(prepared[0].fix, null);
+  assert.equal(prepared[0].url, null);          // no `url` -> no link
+
+  // A rule page address is carried through; anything that is not http(s)
+  // is dropped (the value comes from the network and becomes a link).
+  const linked = core.prepareFindings({ diagnostics: [
+    { line: 1, col: 1, code: "ZPL2001", severity: "warning",
+      url: "https://labelixa.com/zpl/rules/ZPL2001" },
+    { line: 1, col: 1, code: "ZPL2001", severity: "warning",
+      url: "javascript:alert(1)" },
+  ] }, 5);
+  assert.equal(linked[0].url, "https://labelixa.com/zpl/rules/ZPL2001");
+  assert.equal(linked[1].url, null);
 }
 
 function hoverTests() {

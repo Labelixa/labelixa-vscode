@@ -183,6 +183,10 @@ function prepareFindings(report, textLength) {
     range: toRange(f),
     message: f[wire.MESSAGE] || f[wire.MESSAGE_KEY] || f.code || "",
     code: f.code,
+    // Rule page address when the server sends one; the extension turns it
+    // into a clickable code in the Problems panel. Only http(s) is
+    // accepted: the value comes from the network and becomes a link.
+    url: /^https?:\/\//.test(String(f[wire.RULE_URL] || "")) ? f[wire.RULE_URL] : null,
     severity: severity(f.severity),
     fix: quickfixEdit(f, textLength),
   }));
