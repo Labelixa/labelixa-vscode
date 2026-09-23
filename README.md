@@ -15,6 +15,10 @@ Or from the command line:
 code --install-extension labelixa.labelixa-zpl
 ```
 
+Also on [Open VSX](https://open-vsx.org/extension/labelixa/labelixa-zpl)
+for Cursor, VSCodium, Gitpod, Theia and other editors that use the Open VSX
+registry — search for "Labelixa ZPL" in the extensions view.
+
 ## What it does
 
 **Preview the label under your cursor.** Put the caret anywhere inside a
