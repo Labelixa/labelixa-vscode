@@ -27,6 +27,89 @@ const RENDER_PATH = (dpmm, w, h, i) => `/v1/printers/${dpmm}dpmm/labels/${w}x${h
 const DIAGNOSTICS_PATH = "/v1/diagnostics";
 const COMMANDS_PATH = "/v1/commands";
 
+/**
+ * Hosts the API key is sent to without asking: the hosted API and the
+ * site. Any other address is somebody's own installation, or an address a
+ * third party slipped into the configuration; the key goes there only
+ * after the user has confirmed that exact origin (see `keyPolicy`).
+ */
+const TRUSTED_KEY_HOSTS = ["api.labelixa.com", "labelixa.com", "staging.labelixa.com"];
+
+/**
+ * May the API key be sent to `baseUrl`?
+ *
+ * - "trusted": https on a Labelixa host with the default port.
+ * - "confirm": another https address — only after an explicit, remembered
+ *   confirmation of that origin by the user.
+ * - "refuse": plain http, credentials in the URL, or not a URL. The key
+ *   would travel readable on the network (or to a host the URL hides), so
+ *   it is never sent; requests go out anonymously instead.
+ *
+ * @param {string} baseUrl
+ * @returns {"trusted"|"confirm"|"refuse"}
+ */
+function keyPolicy(baseUrl) {
+  let u;
+  try { u = new URL(String(baseUrl)); } catch { return "refuse"; }
+  if (u.protocol !== "https:" || u.username || u.password) return "refuse";
+  if (TRUSTED_KEY_HOSTS.includes(u.hostname) && u.port === "") return "trusted";
+  return "confirm";
+}
+
+/** The origin a confirmation is remembered for ("" when not a URL). */
+function keyOrigin(baseUrl) {
+  try { return new URL(String(baseUrl)).origin; } catch { return ""; }
+}
+
+/** globalState key: origins the user agreed to send the key to. */
+const CONFIRMED_ORIGINS = "labelixa.keyOrigins";
+const SEND_KEY = "Send the key";
+
+/**
+ * Asks, once per origin, before the API key goes to an address that is not
+ * a Labelixa host, and remembers a "yes" per machine. Returns the value for
+ * `Client`'s `keyConfirmed`.
+ *
+ * A "no" (or a closed dialog) is remembered only for the session in
+ * `asked`, so linting while typing does not reopen the dialog on every
+ * keystroke. For a refused (non-https) address the user is told once that
+ * requests go out anonymously.
+ *
+ * @param {string} baseUrl
+ * @param {string} key
+ * @param {{get(k:string, d:any):any, update(k:string, v:any):any}} store
+ *   VS Code `globalState` (a plain object with the same methods in tests)
+ * @param {{showWarningMessage(...a:any[]):any}} ui VS Code `window`
+ * @param {Set<string>} asked origins already asked about this session
+ * @returns {Promise<boolean>}
+ */
+async function keyConsent(baseUrl, key, store, ui, asked) {
+  const policy = keyPolicy(baseUrl);
+  if (!key || policy === "trusted") return false;
+  const origin = keyOrigin(baseUrl);
+  if (policy === "refuse") {
+    if (!asked.has(origin)) {
+      asked.add(origin);
+      ui.showWarningMessage(
+        `Labelixa: your API key is not sent to ${origin || baseUrl}: it is ` +
+        "not an https address. Requests go out anonymously.");
+    }
+    return false;
+  }
+  const confirmed = store.get(CONFIRMED_ORIGINS, []);
+  if (confirmed.includes(origin)) return true;
+  if (asked.has(origin)) return false;
+  asked.add(origin);
+  const choice = await ui.showWarningMessage(
+    `Labelixa: send your API key to ${origin}? This is not a Labelixa ` +
+    "address. Only agree if it is your own self-hosted Labelixa; " +
+    "otherwise requests go there without the key.",
+    { modal: true }, SEND_KEY);
+  if (choice !== SEND_KEY) return false;
+  await store.update(CONFIRMED_ORIGINS, [...confirmed, origin]);
+  return true;
+}
+
 /** Python `:g` format: 4.0 -> "4", 2.25 -> "2.25" (same rule as the SDK). */
 const g = (n) => String(Number(n));
 
@@ -307,19 +390,36 @@ class Client {
    * @param {object} [opts]
    * @param {string} [opts.apiKey] `lbx_…`; omit for anonymous (free, rate limited) use
    * @param {string} [opts.baseUrl]
+   * @param {boolean} [opts.keyConfirmed] the user confirmed sending the key
+   *   to this base URL's origin; only consulted when `keyPolicy` says
+   *   "confirm"
    * @param {typeof fetch} [opts.fetch] test hook
    * @param {string} [opts.version] extension version written to the User-Agent
    */
-  constructor({ apiKey, baseUrl = DEFAULT_BASE_URL, fetch: fetchImpl,
-                version = "0.0.0" } = {}) {
+  constructor({ apiKey, baseUrl = DEFAULT_BASE_URL, keyConfirmed = false,
+                fetch: fetchImpl, version = "0.0.0" } = {}) {
     this._baseUrl = String(baseUrl).replace(/\/+$/, "");
     this._fetch = fetchImpl || globalThis.fetch;
     this._headers = { "User-Agent": `labelixa-vscode/${version}` };
-    if (apiKey) this._headers["X-API-Key"] = apiKey;
+    const policy = keyPolicy(this._baseUrl);
+    /** Whether requests carry the key (false = anonymous). */
+    this.keySent = Boolean(apiKey)
+      && (policy === "trusted" || (policy === "confirm" && keyConfirmed === true));
+    if (this.keySent) this._headers["X-API-Key"] = apiKey;
+  }
+
+  /**
+   * Redirects are NOT followed. fetch drops only `Authorization` when a
+   * redirect crosses origins; a custom `X-API-Key` header would be carried
+   * to wherever the redirect points, plain http included. The API never
+   * redirects, so a 3xx surfaces as an error instead.
+   */
+  _request(path, init) {
+    return this._fetch(this._baseUrl + path, { ...init, redirect: "manual" });
   }
 
   async _get(path) {
-    const res = await this._fetch(this._baseUrl + path, {
+    const res = await this._request(path, {
       method: "GET", headers: this._headers,
     });
     if (res.status !== 200) {
@@ -330,7 +430,7 @@ class Client {
   }
 
   async _post(path, body, extra = {}) {
-    const res = await this._fetch(this._baseUrl + path, {
+    const res = await this._request(path, {
       method: "POST",
       headers: { ...this._headers, "Content-Type": "text/plain", ...extra },
       body,
@@ -390,7 +490,7 @@ class Client {
 }
 
 module.exports = {
-  DEFAULT_BASE_URL, RENDER_PATH, DIAGNOSTICS_PATH, COMMANDS_PATH,
+  DEFAULT_BASE_URL, TRUSTED_KEY_HOSTS, keyPolicy, keyOrigin, keyConsent, RENDER_PATH, DIAGNOSTICS_PATH, COMMANDS_PATH,
   labelBlocks, blockAt, toRange, severity,
   quickfixEdit, prepareFindings, commandAt, hoverMarkdown,
   previewHtml, debounce,

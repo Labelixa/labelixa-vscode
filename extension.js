@@ -20,6 +20,7 @@
  * Identifiers added later are English.
  *
  * The API key lives in `SecretStorage`, never in settings. See `keyOf`.
+ * Where it may be sent is decided by `core.keyPolicy` / `core.keyConsent`.
  */
 "use strict";
 
@@ -68,11 +69,17 @@ async function keyOf(secrets) {
   return legacy;
 }
 
+/** Origins already asked about in this session (see `core.keyConsent`). */
+const askedOrigins = new Set();
+
 async function client(ctx) {
   const s = settings();
+  const key = await keyOf(ctx.secrets);
+  // Where the key may go is decided (and tested) in core; this passes the
+  // per-machine memory (globalState) and the dialog (window) to it.
   return new core.Client({
-    apiKey: await keyOf(ctx.secrets), baseUrl: s.baseUrl,
-    version: ctx.extension?.packageJSON?.version || "0.0.0",
+    apiKey: key, baseUrl: s.baseUrl, version: ctx.extension?.packageJSON?.version || "0.0.0",
+    keyConfirmed: await core.keyConsent(s.baseUrl, key, ctx.globalState, vscode.window, askedOrigins),
   });
 }
 

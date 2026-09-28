@@ -4,6 +4,21 @@ All notable changes to the Labelixa ZPL extension are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 and the project uses [Semantic Versioning](https://semver.org/).
 
+## [0.1.6] - 2026-09-28
+
+### Security
+- `labelixa.baseUrl` is machine-scoped: a workspace's
+  `.vscode/settings.json` can no longer change where requests, and the
+  API key, are sent.
+- The API key is sent without asking only to `https://api.labelixa.com`,
+  `https://labelixa.com` and `https://staging.labelixa.com`. Any other
+  `https` address needs a one-time confirmation per address; without it
+  requests go out without the key. Over plain `http` the key is never
+  sent.
+- Redirects are no longer followed. fetch removes only `Authorization`
+  when a redirect changes host; the `X-API-Key` header would have been
+  carried along.
+
 ## [0.1.5] - 2026-09-22
 
 ### Added

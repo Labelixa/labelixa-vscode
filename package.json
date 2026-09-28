@@ -2,7 +2,7 @@
   "name": "labelixa-zpl",
   "displayName": "Labelixa ZPL",
   "description": "Preview Zebra ZPL labels and lint them while you type — the label under your cursor, rendered. No printer required.",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "icon": "icon.png",
   "publisher": "labelixa",
   "license": "MIT",
@@ -93,7 +93,8 @@
         "labelixa.baseUrl": {
           "type": "string",
           "default": "https://api.labelixa.com",
-          "description": "API base URL. Change this only for a self-hosted (on-premise) Labelixa."
+          "scope": "machine",
+          "markdownDescription": "API base URL. Change this only for a self-hosted (on-premise) Labelixa. User settings only: a workspace cannot change where requests go. The API key is sent to `https://api.labelixa.com` (and `labelixa.com`, `staging.labelixa.com`) without asking; to any other address only over `https` and only after you confirm that address once. Over plain `http` the key is never sent."
         },
         "labelixa.dpmm": {
           "type": "number",

@@ -74,11 +74,26 @@ the first time 0.1.4 runs, and the setting is then cleared.
 | Setting | Default | Meaning |
 |---|---|---|
 | `labelixa.apiKey` | *empty* | **Deprecated.** Use **Labelixa: Set the API key**; a value left here is moved into the secret store once and then cleared. |
-| `labelixa.baseUrl` | `https://api.labelixa.com` | Change only for a self-hosted Labelixa. |
+| `labelixa.baseUrl` | `https://api.labelixa.com` | Change only for a self-hosted Labelixa. User settings only (see below). |
 | `labelixa.dpmm` | `8` | Printer resolution (8 dpmm = 203 dpi). |
 | `labelixa.widthIn` / `labelixa.heightIn` | `4` / `6` | Label size in inches. |
 | `labelixa.lintOnSave` | `true` | Lint on save. |
 | `labelixa.lintWhileTyping` | `true` | Lint 700 ms after you stop typing. |
+
+### Where your API key goes
+
+- `labelixa.baseUrl` can only be set in your **user** settings. A value in
+  a workspace's `.vscode/settings.json` is ignored, so a repository you
+  open cannot point the extension, and your key, at another server.
+- The key is sent without asking only to `https://api.labelixa.com`,
+  `https://labelixa.com` and `https://staging.labelixa.com`.
+- For any other `https` address (your own self-hosted Labelixa) the
+  extension asks once, per address, before it sends the key. If you say
+  no, requests go to that address **without** the key. A "yes" is
+  remembered on this machine.
+- Over plain `http` the key is **never** sent; requests go out anonymously.
+- Redirects are not followed, so a server cannot forward your key to
+  another host.
 
 ## What it does not do
 

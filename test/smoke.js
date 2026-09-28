@@ -262,10 +262,97 @@ async function headerTest() {
     seen.ua = opts.headers["User-Agent"];
     return new Response("{}", { status: 200 });
   };
-  await new core.Client({ apiKey: "lbx_test", baseUrl: "http://x",
+  await new core.Client({ apiKey: "lbx_test", baseUrl: "https://api.labelixa.com",
                           version: "9.9.9", fetch: fakeFetch }).diagnostics(ZPL);
   assert.equal(seen.key, "lbx_test");
   assert.equal(seen.ua, "labelixa-vscode/9.9.9");
+}
+
+// Where the API key may go. A workspace could once point `baseUrl` at any
+// host; the setting is machine-scoped now, and the client itself refuses to
+// attach the key to an address that is not a Labelixa host unless the user
+// confirmed it.
+async function keyPolicyTests() {
+  assert.equal(core.keyPolicy("https://api.labelixa.com"), "trusted");
+  assert.equal(core.keyPolicy("https://labelixa.com/"), "trusted");
+  assert.equal(core.keyPolicy("https://staging.labelixa.com"), "trusted");
+  assert.equal(core.keyPolicy("https://api.labelixa.com:8443"), "confirm");
+  assert.equal(core.keyPolicy("https://api.labelixa.com.evil.test"), "confirm");
+  assert.equal(core.keyPolicy("https://labels.example.com"), "confirm");
+  assert.equal(core.keyPolicy("http://api.labelixa.com"), "refuse");
+  assert.equal(core.keyPolicy("http://127.0.0.1:8000"), "refuse");
+  assert.equal(core.keyPolicy("https://user:pw@api.labelixa.com"), "refuse");
+  assert.equal(core.keyPolicy("not a url"), "refuse");
+
+  const sent = async (opts) => {
+    let key;
+    const fetch = async (url, o) => {
+      key = o.headers["X-API-Key"];
+      return new Response("{}", { status: 200 });
+    };
+    const c = new core.Client({ apiKey: "lbx_test", fetch, ...opts });
+    await c.diagnostics(ZPL);
+    assert.equal(c.keySent, key === "lbx_test");
+    return key;
+  };
+  assert.equal(await sent({ baseUrl: "https://evil.test" }), undefined,
+               "key sent to a foreign host without confirmation");
+  assert.equal(await sent({ baseUrl: "https://evil.test", keyConfirmed: true }),
+               "lbx_test");
+  assert.equal(await sent({ baseUrl: "http://evil.test", keyConfirmed: true }),
+               undefined, "key sent over plain http");
+  assert.equal(await sent({ baseUrl: "https://api.labelixa.com" }), "lbx_test");
+
+  // Consent: asked once per origin; "yes" is remembered, "no" is not
+  // re-asked in the same session; http is never asked, only reported.
+  const memory = new Map();
+  const store = { get: (k, d) => memory.get(k) ?? d,
+                  update: async (k, v) => { memory.set(k, v); } };
+  const prompts = [];
+  const ui = (answer) => ({ showWarningMessage: async (msg, ...rest) => {
+    prompts.push(msg);
+    return rest.length ? answer : undefined;
+  } });
+  const asked = new Set();
+  assert.equal(await core.keyConsent("https://evil.test", "k", store, ui(undefined), asked), false);
+  assert.equal(await core.keyConsent("https://evil.test", "k", store, ui("Send the key"), asked), false,
+               "a 'no' was re-asked in the same session");
+  assert.equal(prompts.length, 1);
+  assert.equal(await core.keyConsent("https://mine.test", "k", store, ui("Send the key"), asked), true);
+  assert.equal(await core.keyConsent("https://mine.test", "k", store, ui(undefined), new Set()), true,
+               "a confirmed origin was not remembered");
+  assert.equal(prompts.length, 2);
+  assert.equal(await core.keyConsent("http://mine.test", "k", store, ui("Send the key"), asked), false);
+  assert.equal(await core.keyConsent("https://api.labelixa.com", "k", store, ui("Send the key"), asked),
+               false);                                  // trusted: nothing to confirm
+  assert.equal(await core.keyConsent("https://other.test", "", store, ui("Send the key"), asked), false);
+  assert.equal(prompts.length, 3);                        // the http notice only
+  assert.deepEqual(memory.get("labelixa.keyOrigins"), ["https://mine.test"]);
+}
+
+// Redirects are not followed: a 307 to another host would otherwise carry
+// the custom X-API-Key header along (fetch strips only Authorization).
+async function redirectTest() {
+  let evilHits = 0;
+  const evil = createServer((req, res) => { evilHits += 1; res.end("{}"); });
+  await new Promise((r) => evil.listen(0, "127.0.0.1", r));
+  const hop = createServer((req, res) => {
+    res.writeHead(307, { Location: `http://127.0.0.1:${evil.address().port}/v1/diagnostics` });
+    res.end();
+  });
+  await new Promise((r) => hop.listen(0, "127.0.0.1", r));
+  try {
+    await new core.Client({ baseUrl: `http://127.0.0.1:${hop.address().port}` })
+      .diagnostics(ZPL);
+    assert.fail("a redirect should not be followed");
+  } catch (e) {
+    assert.ok(e instanceof core.LabelixaError, `expected LabelixaError: ${e}`);
+    assert.equal(e.status, 307);
+  } finally {
+    hop.close();
+    evil.close();
+  }
+  assert.equal(evilHits, 0, "redirect target was contacted");
 }
 
 async function main() {
@@ -278,7 +365,9 @@ async function main() {
   await endpointTests();
   await quotaTest();
   await headerTest();
-  console.log("smoke ok: 9 groups passed");
+  await keyPolicyTests();
+  await redirectTest();
+  console.log("smoke ok: 11 groups passed");
 }
 
 main().catch((e) => { console.error(e); process.exit(1); });
