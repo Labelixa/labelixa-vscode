@@ -398,7 +398,11 @@ class Client {
    */
   constructor({ apiKey, baseUrl = DEFAULT_BASE_URL, keyConfirmed = false,
                 fetch: fetchImpl, version = "0.0.0" } = {}) {
-    this._baseUrl = String(baseUrl).replace(/\/+$/, "");
+    // A loop, not /\/+$/: that regex backtracks polynomially on a long run
+    // of slashes and the base URL comes from user settings.
+    let base = String(baseUrl);
+    while (base.endsWith("/")) base = base.slice(0, -1);
+    this._baseUrl = base;
     this._fetch = fetchImpl || globalThis.fetch;
     this._headers = { "User-Agent": `labelixa-vscode/${version}` };
     const policy = keyPolicy(this._baseUrl);

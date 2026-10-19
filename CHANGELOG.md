@@ -4,6 +4,13 @@ All notable changes to the Labelixa ZPL extension are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 and the project uses [Semantic Versioning](https://semver.org/).
 
+## [0.1.7] - 2026-10-19
+
+### Fixed
+- Trailing slashes in `labelixa.baseUrl` are stripped with a loop instead
+  of the `/\/+$/` pattern, which backtracked polynomially on a long run of
+  slashes.
+
 ## [0.1.6] - 2026-09-28
 
 ### Security
