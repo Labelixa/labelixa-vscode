@@ -373,6 +373,26 @@ function debounce(fn, ms) {
 
 // ──────────────────────────────────────────────────────────── client ──
 
+/**
+ * The text of an error answer, ready to show. The API answers an error with
+ * `{"<wire.ERROR>": "sentence"}`; showing that raw JSON put a wire field
+ * name in front of the user ("Labelixa: {...}"). Only the sentence is kept.
+ * A body that is not that shape (plain text, a proxy's HTML page) is shown
+ * as it came. Capped at 500 characters either way.
+ */
+function serverText(raw) {
+  let text = raw;
+  try {
+    const body = JSON.parse(raw);
+    if (body && typeof body === "object" && typeof body[wire.ERROR] === "string") {
+      text = body[wire.ERROR];
+    }
+  } catch {
+    // Not JSON: keep the raw text.
+  }
+  return text.slice(0, 500);
+}
+
 class LabelixaError extends Error {
   constructor(status, serverMessage) {
     super(`HTTP ${status}: ${serverMessage}`);
@@ -427,8 +447,7 @@ class Client {
       method: "GET", headers: this._headers,
     });
     if (res.status !== 200) {
-      const text = (await res.text()).slice(0, 500);
-      throw new LabelixaError(res.status, text);
+      throw new LabelixaError(res.status, serverText(await res.text()));
     }
     return res;
   }
@@ -440,8 +459,7 @@ class Client {
       body,
     });
     if (res.status !== 200) {
-      const text = (await res.text()).slice(0, 500);
-      const err = new LabelixaError(res.status, text);
+      const err = new LabelixaError(res.status, serverText(await res.text()));
       if (err.quota) {
         const raw = res.headers.get("Retry-After");
         const n = Number.parseInt(raw || "60", 10);
@@ -498,5 +516,5 @@ module.exports = {
   labelBlocks, blockAt, toRange, severity,
   quickfixEdit, prepareFindings, commandAt, hoverMarkdown,
   previewHtml, debounce,
-  Client, LabelixaError,
+  Client, LabelixaError, serverText,
 };

@@ -4,6 +4,14 @@ All notable changes to the Labelixa ZPL extension are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 and the project uses [Semantic Versioning](https://semver.org/).
 
+## [0.1.8] - 2026-10-20
+
+### Changed
+- API error messages are shown as the server's sentence only. The API
+  answers an error with a small JSON object; the extension used to show
+  that JSON as it came (`Labelixa: HTTP 400: {"...": "..."}`). A body that
+  is not JSON is still shown as it came.
+
 ## [0.1.7] - 2026-10-19
 
 ### Fixed

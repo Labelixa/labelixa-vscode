@@ -19,6 +19,9 @@
  */
 "use strict";
 
+/** Error answer: `{"hata": "<the server's sentence>"}` (any non-2xx). */
+const ERROR = "hata";
+
 /** Diagnostics response. */
 const FINDINGS = "diagnostics";
 const MESSAGE = "mesaj";
@@ -44,7 +47,7 @@ const COMMAND_PARAMS = "parametreler";
 const COMMAND_RENDERED = "destekleniyor";
 
 module.exports = {
-  FINDINGS, MESSAGE, MESSAGE_KEY, RULE_URL,
+  ERROR, FINDINGS, MESSAGE, MESSAGE_KEY, RULE_URL,
   FIX, FIX_TITLE, FIX_START, FIX_END, FIX_TEXT,
   COMMAND_LIST, COMMAND_CODE, COMMAND_NAME, COMMAND_TEXT,
   COMMAND_FORMAT, COMMAND_PARAMS, COMMAND_RENDERED,
